@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "trellix-hx-mcp"
+version = "1.0.0"
+description = "MCP server for Trellix (FireEye) HX On-Prem appliances"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Security Automation Team" }]
+keywords = ["mcp", "trellix", "fireeye", "hx", "security", "soc", "edr"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "urllib3>=2.0.0",
+]
+
+[project.optional-dependencies]
+chat = ["openai>=1.0.0"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+trellix-hx-mcp = "server:mcp.run"
