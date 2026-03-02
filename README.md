@@ -9,9 +9,9 @@
 
 <p align="center">
   <a href="#-quick-start"><img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" alt="Python" /></a>
-  <a href="#-tools-31"><img src="https://img.shields.io/badge/MCP_Tools-31-orange?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHRleHQgeT0iMjAiIGZvbnQtc2l6ZT0iMjAiPvCflKc8L3RleHQ+PC9zdmc+" alt="Tools" /></a>
+  <a href="#-tools-31"><img src="https://img.shields.io/badge/MCP_Tools-31-orange" alt="Tools" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License" /></a>
-  <a href="#-security-notes"><img src="https://img.shields.io/badge/Security-On--Prem-red?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHRleHQgeT0iMjAiIGZvbnQtc2l6ZT0iMjAiPvCblKE8L3RleHQ+PC9zdmc+" alt="Security" /></a>
+  <a href="#-security-notes"><img src="https://img.shields.io/badge/Security-On--Prem-red" alt="Security" /></a>
 </p>
 
 ---
@@ -31,11 +31,11 @@
 
 | Feature | Description |
 |---|---|
-| 🔐 **Token-based auth** | Automatic session token acquisition & refresh |
-| ⚡ **Rate limiting** | 5 req/s token-bucket to protect your appliance |
-| 🎯 **Structured errors** | Clean, actionable error messages from HX API |
-| 🔄 **Hostname resolution** | `resolve_hostname` converts names → agent IDs |
-| 📦 **Modern packaging** | Install via `pip install .` or `pip install '.[chat]'` |
+| 🔐 **Token-based auth** | Automatic session token acquisition & refresh via `X-FeApi-Token` |
+| ⚡ **Rate limiting** | 5 req/s token-bucket protects your appliance from overload |
+| 🎯 **Structured errors** | Clean, actionable error messages parsed from HX API responses |
+| 🔄 **Hostname resolution** | Built-in `resolve_hostname` converts names → agent IDs |
+| 📦 **Modern packaging** | Install via `pip install .` with optional extras |
 
 ---
 
@@ -46,28 +46,20 @@
 Ask questions in natural language — the AI automatically calls the right HX tools and summarizes results:
 
 <p align="center">
-  <img src="assets/chat-demo.png" alt="LLM Chat Demo" width="600" />
+  <img src="assets/chat-demo.webp" alt="LLM Chat Demo – AI Security Analyst querying HX appliance" width="750" />
 </p>
 
-```
-You ▸ Show me the latest critical alerts
-
-  🔧 Calling list_alerts({"limit": 5})
-
-HX Analyst ▸ Found 970 alerts across your fleet. Here are the latest 5:
-
-  1. Alert #247566 — Source: TP — Host: WORKSTATION01 — Status: New
-  2. Alert #247592 — Source: IOC — Host: SERVER03 — Indicator: OPENCTI-indicators_ipv4
-  3. Alert #247510 — Source: MAL — Host: LAPTOP42 — File quarantined
-```
+> The chat client uses OpenAI-compatible APIs (GPT-4o, GPT-5, Azure OpenAI, etc.) with automatic function calling to invoke the right MCP tools.
 
 ### Interactive Test Runner
 
-Validate all tools against your real appliance in seconds:
+Validate all 31 tools against your real appliance in seconds:
 
 <p align="center">
-  <img src="assets/test-runner.png" alt="Test Runner Demo" width="600" />
+  <img src="assets/test-runner-demo.webp" alt="Test Runner Demo – 24 tools passing" width="750" />
 </p>
+
+> Run `python test_tools.py` for batch mode or `python test_tools.py -i` for interactive pick-and-run.
 
 ---
 
@@ -83,6 +75,39 @@ Validate all tools against your real appliance in seconds:
 | **Search** | `list_searches`, `get_search_counts`, `list_policies`, `list_host_policies_channels` | Enterprise IOC sweeps & policies |
 | **Scripts** | `list_scripts`, `download_scripts_zip` | Response script management |
 
+<details>
+<summary><strong>📖 Tool Details (click to expand)</strong></summary>
+
+#### `resolve_hostname`
+Converts a hostname to its HX agent ID. **Use this before any host-scoped tool.**
+```
+resolve_hostname("LAPTOP-DEV-J09")
+→ { agent_id: "xK9f2qBY...", hostname: "LAPTOP-DEV-J09", ip: "10.0.12.89", os: "Windows 11" }
+```
+
+#### `get_alert_details`
+Drill into a specific alert by ID for full event context.
+```
+get_alert_details(alert_id=8421)
+→ Complete alert record: indicator, host, event, timestamps, resolution
+```
+
+#### `get_indicator_details`
+Get full indicator definition including all conditions and platforms.
+```
+get_indicator_details(category="Custom", indicator_name="suspicious-dns-beacon")
+→ Conditions, platforms, severity, description
+```
+
+#### `download_file_acquisition`
+Download a completed file acquisition as a ZIP archive.
+```
+download_file_acquisition(acquisition_id=1234)
+→ "Downloaded acquisition 1234 (2,456,789 bytes)"
+```
+
+</details>
+
 ---
 
 ## ⚡ Quick Start
@@ -94,8 +119,13 @@ git clone https://github.com/bry4nsec/trellix-hx-mcp.git
 cd trellix-hx-mcp
 python3 -m venv venv
 source venv/bin/activate
+
+# Option A: Modern install (recommended)
 pip install .              # core MCP server
-pip install '.[chat]'      # + LLM chat client (optional)
+pip install '.[chat]'      # + LLM chat client
+
+# Option B: Traditional install
+pip install -r requirements.txt
 ```
 
 ### 2. Configure
@@ -111,17 +141,17 @@ HX_HOST=https://your-hx-appliance.example.com
 HX_USER=your_api_username
 HX_PASS=your_api_password
 
-# Optional: for chat.py
+# Optional: for the LLM chat client (chat.py)
 LLM_ENDPOINT=https://api.openai.com/v1
 LLM_MODEL=gpt-4o
-LLM_API_KEY=your_llm_api_key
+LLM_API_KEY=your_api_key_here
 ```
 
 ### 3. Verify Connection
 
 ```bash
-python test_tools.py          # run all read-only tools
-python test_tools.py -i       # interactive mode
+python test_tools.py          # run all 28 read-only tools
+python test_tools.py -i       # interactive mode with write tools
 ```
 
 ---
@@ -150,23 +180,23 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ### Cursor / Windsurf / Continue.dev
 
-All MCP-compatible editors support the same configuration format. Point the MCP client at `server.py` with your environment variables.
+All MCP-compatible editors support a similar configuration. Point the MCP client at `server.py` with your environment variables.
 
-### MCP Inspector (for testing)
+### MCP Inspector
 
 ```bash
 mcp dev server.py
 ```
 
-Opens an interactive web UI to browse and test all 31 tools.
+Opens an interactive web UI to browse and test all 31 tools manually.
 
-### LLM Chat Client (standalone)
+### Standalone LLM Chat
 
 ```bash
 python chat.py
 ```
 
-An interactive terminal chat powered by OpenAI-compatible APIs with automatic function calling.
+Interactive terminal chat with automatic function calling. Supports any OpenAI-compatible API endpoint (OpenAI, Azure OpenAI, VortexAI, local models via Ollama, etc.).
 
 ---
 
@@ -178,38 +208,39 @@ An interactive terminal chat powered by OpenAI-compatible APIs with automatic fu
 │                                                              │
 │   "Show me hosts with recent alerts"                         │
 │    ↓                                                         │
-│   LLM decides to call: list_alerts(limit: 10)                │
+│   LLM decides to call: resolve_hostname → list_alerts        │
 │    ↓                                                         │
-│   Tool result → LLM summarizes → User sees clean output      │
+│   Tool results → LLM summarizes → User sees clean output     │
 └──────────────┬───────────────────────────────────────────────┘
                │  MCP Protocol (stdio / SSE)
                ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                    server.py  (FastMCP)                       │
+│                    server.py  (FastMCP)                      │
 │                                                              │
-│   ┌─────────┐  ┌─────────────┐  ┌──────────────────┐        │
-│   │ Token   │  │ Rate        │  │ Structured       │        │
-│   │ Auth    │  │ Limiter     │  │ Error Handler    │        │
-│   │         │  │ (5 req/s)   │  │ (HXAPIError)     │        │
-│   └────┬────┘  └──────┬──────┘  └────────┬─────────┘        │
-│        └───────────────┼─────────────────┘                   │
-│                        ▼                                     │
-│              _query(method, endpoint)                         │
-│                        │                                     │
-│   ┌────────────────────┼────────────────────────┐            │
-│   │ 31 Tools: hosts, alerts, indicators, acqs,  │            │
-│   │ searches, policies, scripts, containment... │            │
-│   └────────────────────┼────────────────────────┘            │
-└────────────────────────┼─────────────────────────────────────┘
-                         │  HTTPS + X-FeApi-Token
-                         ▼
+│   ┌──────────┐  ┌──────────────┐  ┌────────────────────┐     │
+│   │ Token    │  │ Rate         │  │ Structured         │     │
+│   │ Auth     │  │ Limiter      │  │ Error Handler      │     │
+│   │ (auto)   │  │ (5 req/s)    │  │ (HXAPIError)       │     │
+│   └────┬─────┘  └──────┬───────┘  └────────┬───────────┘     │
+│        └────────────────┼──────────────────┘                 │
+│                         ▼                                    │
+│               _query(method, endpoint)                       │
+│                         │                                    │
+│   ┌─────────────────────┼────────────────────────┐           │
+│   │  31 Tools: resolve_hostname, list_alerts,    │           │
+│   │  get_alert_details, list_indicators,         │           │
+│   │  manage_containment, trigger_triage, ...     │           │
+│   └─────────────────────┼────────────────────────┘           │
+└─────────────────────────┼────────────────────────────────────┘
+                          │  HTTPS + X-FeApi-Token
+                          ▼
 ┌──────────────────────────────────────────────────────────────┐
 │              Trellix HX On-Prem Appliance                    │
 │              (HX v3 REST API)                                │
 │                                                              │
-│   /hx/api/v3/hosts    /hx/api/v3/alerts                      │
-│   /hx/api/v3/indicators   /hx/api/v3/acqs/files             │
-│   /hx/api/v3/searches     /hx/api/v3/scripts      ...       │
+│   /hx/api/v3/hosts        /hx/api/v3/alerts                  │
+│   /hx/api/v3/indicators   /hx/api/v3/acqs/files              │
+│   /hx/api/v3/searches     /hx/api/v3/scripts      ...        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -219,13 +250,12 @@ An interactive terminal chat powered by OpenAI-compatible APIs with automatic fu
 
 ```
 trellix-hx-mcp/
-├── server.py          # MCP server — 31 tools with token auth & rate limiting
+├── server.py          # MCP server — 31 tools, token auth, rate limiting
 ├── test_tools.py      # Interactive test runner (batch + pick-and-run)
 ├── chat.py            # LLM chat client (OpenAI-compatible)
 ├── pyproject.toml     # Modern Python packaging (pip install .)
 ├── requirements.txt   # Fallback dependency list
-├── dev.nix            # Nix development environment
-├── assets/            # README images
+├── assets/            # README images and demo recordings
 ├── .env.example       # Template credentials (safe to commit)
 └── .gitignore         # Protects .env, venv/, __pycache__/
 ```
@@ -235,14 +265,12 @@ trellix-hx-mcp/
 ## 🔐 Security Notes
 
 > [!CAUTION]
-> **Never commit your `.env` file.** It contains your real HX appliance credentials. Use `.env.example` as a template.
+> **Never commit your `.env` file.** It contains your real HX appliance credentials. The `.gitignore` is already configured to exclude it.
 
-- Uses **HTTP Basic Auth** for initial token acquisition, then **session tokens** for all subsequent requests
-- `verify=False` for self-signed certificates (standard in on-prem deployments)
-- `urllib3` InsecureRequestWarning is suppressed for clean output
-- Rate-limited to **5 requests/second** to prevent appliance overload
-- Write operations (`manage_containment`, `trigger_triage`, `create_file_acquisition`) are clearly documented with ⚠️ warnings
-- The test runner requires explicit confirmation (`y/N`) before executing any write operation
+- **Authentication**: Initial token via HTTP Basic Auth, then session tokens (`X-FeApi-Token`) for all subsequent requests
+- **TLS**: `verify=False` for self-signed certificates (standard in on-prem deployments)
+- **Rate Limiting**: Token-bucket at 5 req/s to prevent appliance overload
+- **Write Safety**: Destructive tools (`manage_containment`, `trigger_triage`, `create_file_acquisition`) are documented with ⚠️ warnings and require explicit confirmation in the test runner
 
 ---
 
@@ -251,9 +279,9 @@ trellix-hx-mcp/
 | Requirement | Details |
 |---|---|
 | **Python** | 3.10+ |
-| **HX Appliance** | Trellix HX On-Prem with v3 API access |
+| **HX Appliance** | Trellix HX On-Prem with API v3 access |
 | **API User** | Account with appropriate role permissions |
-| **Network** | HTTPS access to the appliance from the server host |
+| **Network** | HTTPS connectivity to the appliance |
 
 ---
 
@@ -261,7 +289,7 @@ trellix-hx-mcp/
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feat/new-tool`)
-3. Test against a real appliance using `python test_tools.py`
+3. Test against a real appliance with `python test_tools.py`
 4. Submit a Pull Request
 
 ---
