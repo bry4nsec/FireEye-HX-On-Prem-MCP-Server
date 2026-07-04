@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/bry4nsec-fireeye-hx-on-prem-mcp-server-badge.png)](https://mseep.ai/app/bry4nsec-fireeye-hx-on-prem-mcp-server)
+
 <p align="center">
   <img src="assets/hero-banner.png" alt="Trellix HX MCP Server" width="800" />
 </p>
